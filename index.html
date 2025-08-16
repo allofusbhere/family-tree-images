@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SwipeTree — iPad Test</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">SwipeTree</div>
+      <div class="spacer"></div>
+      <button id="backBtn" class="btn">Back</button>
+    </header>
+
+    <main id="stage">
+      <!-- Anchor area -->
+      <div id="anchorWrap">
+        <img id="anchorImg" alt="anchor" draggable="false" />
+        <div id="anchorName" class="name"></div>
+      </div>
+
+      <!-- Overlay grid -->
+      <section id="gridOverlay" class="hidden">
+        <div class="gridHeader">
+          <h2 id="gridTitle">Grid</h2>
+        </div>
+        <div id="grid" class="grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
