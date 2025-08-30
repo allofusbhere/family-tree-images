@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SwipeTree</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" aria-live="polite"></div>
+
+  <!-- Load EXACTLY one core file (match your repo). If both exist, the second is ignored -->
+  <script>
+    (function(){
+      var s1 = document.createElement('script'); s1.src = 'script.v132.js'; s1.defer = true;
+      s1.onerror = function(){ var s2 = document.createElement('script'); s2.src = 'script.js'; s2.defer = true; document.body.appendChild(s2); };
+      document.body.appendChild(s1);
+    })();
+  </script>
+
+  <!-- Inline SoftEdit (long-press) so there are NO extra files -->
+  <script>
+  (function(){
+    const LABELS_KEY = 'st_labels';
+    function loadLabels(){ try { return JSON.parse(localStorage.getItem(LABELS_KEY) || '{}'); } catch(e){ return {}; } }
+    function saveLabels(map){ localStorage.setItem(LABELS_KEY, JSON.stringify(map)); }
+    function getIdFromSrc(src){
+      if(!src) return null;
+      const m = src.match(/(\d+(?:\.\d+)*?)\.(?:jpg|jpeg|png|webp|gif)(?:\?.*)?$/i);
+      return m ? m[1] : null;
+    }
+
+    function wireSoftEdit(root){
+      const imgs = Array.from((root || document).querySelectorAll('img'));
+      imgs.forEach(img => {
+        const id = getIdFromSrc(img.getAttribute('data-id') || img.src);
+        if(!id) return;
+        if(img.__st_softedit_wired) return;
+        img.__st_softedit_wired = true;
+
+        let pressTimer = null, pressed = false;
+        const start = (ev) => {
+          if(ev.touches && ev.touches.length > 1) return;
+          pressed = true;
+          img.classList.add('longpress-focus');
+          pressTimer = setTimeout(() => { openEditor(id, img); }, 520);
+        };
+        const cancel = () => {
+          pressed = false;
+          img.classList.remove('longpress-focus');
+          if(pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        };
+
+        img.addEventListener('touchstart', start, {passive:true});
+        img.addEventListener('mousedown', start);
+        img.addEventListener('touchend', cancel);
+        img.addEventListener('mouseup', cancel);
+        img.addEventListener('mouseleave', cancel);
+        img.addEventListener('touchmove', cancel, {passive:true});
+      });
+    }
+
+    function openEditor(id, el){
+      const labels = loadLabels();
+      const current = labels[id] || { name: '', dob: '' };
+      const name = prompt('Edit name for ' + id + ':', current.name || '');
+      if(name === null){ el.classList.remove('longpress-focus'); return; }
+      const dob = prompt('Edit DOB for ' + id + ' (optional):', current.dob || '');
+      if(dob === null){ el.classList.remove('longpress-focus'); return; }
+      labels[id] = { name: name.trim(), dob: dob.trim() };
+      saveLabels(labels);
+      applyLabels();
+      setTimeout(function(){ el.classList.remove('longpress-focus'); }, 120);
+    }
+
+    function applyLabels(root){
+      const labels = loadLabels();
+
+      document.querySelectorAll('.grid-item, .relationship-grid .tile, .grid .tile').forEach(tile => {
+        const img = tile.querySelector('img');
+        if(!img) return;
+        const id = getIdFromSrc(img.getAttribute('data-id') || img.src);
+        if(!id) return;
+        const info = labels[id];
+        let cap = tile.querySelector('.caption, .st-label');
+        if(!cap){ cap = document.createElement('div'); cap.className = 'st-label'; tile.appendChild(cap); }
+        cap.textContent = info ? ((info.name || id) + (info.dob ? (' — ' + info.dob) : '')) : '';
+      });
+
+      const anchorImg = document.querySelector('.anchor-image, .anchor img, img#anchorImage');
+      const stage = document.body;
+      if(anchorImg && stage){
+        const id = getIdFromSrc(anchorImg.getAttribute('data-id') || anchorImg.src);
+        const info = id ? labels[id] : null;
+        let badge = document.querySelector('.anchor-label-badge');
+        if(!badge){ badge = document.createElement('div'); badge.className = 'anchor-label-badge'; stage.appendChild(badge); }
+        badge.textContent = info ? ((info.name || id) + (info.dob ? (' — ' + info.dob) : '')) : (id || '');
+        badge.style.display = id ? 'block' : 'none';
+      }
+    }
+
+    const obs = new MutationObserver(function(){
+      wireSoftEdit(document);
+      applyLabels(document);
+    });
+    obs.observe(document.documentElement, { childList:true, subtree:true, attributes:true });
+
+    window.addEventListener('DOMContentLoaded', function(){
+      wireSoftEdit(document);
+      applyLabels(document);
+      setTimeout(function(){ wireSoftEdit(document); applyLabels(document); }, 400);
+    });
+
+    window.SwipeTreeSoftEdit = { applyLabels: applyLabels, loadLabels: loadLabels };
+  })();
+  </script>
+</body>
+</html>
